@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evacudoor — Offline fire evacuation guidance for Kenyan buildings</title>
+<meta name="description" content="Evacudoor is a Nairobi-based startup building an offline fire evacuation guidance system that keeps showing people the safest exit when WiFi, mobile networks and alarms fail.">
+<meta name="theme-color" content="#1B2A4A">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Evacudoor — When the network fails, the exit still shows">
+<meta property="og:description" content="Offline fire evacuation guidance for commercial buildings in Kenya.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231B2A4A'/%3E%3Crect x='20' y='12' width='24' height='40' rx='2' fill='none' stroke='%23C98A2C' stroke-width='5'/%3E%3Ccircle cx='38' cy='33' r='3' fill='%23C98A2C'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --teal: #0F5C5C;
+    --gold: #C98A2C;
+    --red: #8B1E1E;
+    --grey: #F2F2F2;
+    --white: #FFFFFF;
+    --ink: #222222;
+    --heading: Arial, Helvetica, sans-serif;
+    --body: Georgia, "Times New Roman", serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--body);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    color: var(--ink);
+    background: var(--white);
+  }
+  h1, h2, h3 { font-family: var(--heading); color: var(--navy); line-height: 1.15; margin: 0; }
+  p { margin: 0 0 1em; max-width: 62ch; }
+  a { color: var(--teal); }
+  a:focus-visible, .btn:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 3px;
+  }
+  .wrap { width: min(1080px, 100% - 3rem); margin-inline: auto; }
+
+  .skip {
+    position: absolute; left: -999px; top: 0;
+    background: var(--gold); color: var(--navy);
+    padding: .6rem 1rem; font-family: var(--heading); z-index: 10;
+  }
+  .skip:focus { left: 0; }
+
+  /* Header */
+  header.site {
+    background: var(--navy);
+    color: var(--white);
+    position: sticky; top: 0; z-index: 5;
+    border-bottom: 3px solid var(--gold);
+  }
+  header.site .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; padding-block: .85rem;
+  }
+  .brand {
+    font-family: var(--heading); font-weight: 700; font-size: 1.25rem;
+    letter-spacing: .12em; color: var(--white); text-decoration: none;
+  }
+  nav ul { list-style: none; display: flex; gap: 1.5rem; margin: 0; padding: 0; flex-wrap: wrap; }
+  nav a {
+    font-family: var(--heading); font-size: .95rem; color: var(--white);
+    text-decoration: none; padding-block: .25rem; border-bottom: 2px solid transparent;
+  }
+  nav a:hover { border-bottom-color: var(--gold); }
+
+  /* Hero */
+  .hero { background: var(--navy); color: var(--white); padding-block: clamp(3rem, 8vw, 6rem); }
+  .hero .wrap {
+    display: grid; grid-template-columns: 1.05fr 1fr;
+    gap: clamp(2rem, 5vw, 4rem); align-items: center;
+  }
+  .hero h1 {
+    color: var(--white);
+    font-size: clamp(2.2rem, 5.2vw, 3.6rem);
+    letter-spacing: -.01em;
+  }
+  .hero p.lede { font-size: 1.2rem; color: #DDE3EE; margin-top: 1.4rem; }
+  .btn {
+    display: inline-block; font-family: var(--heading); font-weight: 700;
+    background: var(--gold); color: var(--navy); text-decoration: none;
+    padding: .9rem 1.6rem; border-radius: 4px; margin-top: .6rem;
+  }
+  .btn:hover { background: #D99A3C; }
+  .hero figure { margin: 0; }
+  .hero figcaption {
+    font-family: var(--heading); font-size: .85rem; color: #B8C2D6;
+    margin-top: .75rem; max-width: 46ch;
+  }
+  svg.plan { width: 100%; height: auto; display: block; }
+  .wall { fill: none; stroke: rgba(255,255,255,.4); stroke-width: 3; stroke-linecap: square; }
+  .node { fill: var(--teal); stroke: #7FD1C7; stroke-width: 2; }
+  .node.hot { fill: var(--red); stroke: #E58A8A; }
+  .fire { fill: rgba(139,30,30,.55); }
+  .route {
+    fill: none; stroke: var(--gold); stroke-width: 5;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 520; stroke-dashoffset: 520;
+    animation: draw 2.6s ease-out .5s forwards;
+  }
+  .label { font-family: var(--heading); font-size: 13px; fill: #DDE3EE; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .route { animation: none; stroke-dashoffset: 0; }
+  }
+
+  /* Sections */
+  section { padding-block: clamp(3rem, 7vw, 5.5rem); }
+  section.alt { background: var(--grey); }
+  h2 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin-bottom: 1.2rem; max-width: 24ch; }
+  .rule { width: 56px; height: 4px; background: var(--gold); margin-bottom: 1.4rem; }
+
+  .fails {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    margin-top: 2rem; border-top: 3px solid var(--navy);
+  }
+  .fails div {
+    padding: 1rem 1rem 0 0; font-family: var(--heading); font-size: 1rem; color: var(--navy);
+  }
+  .fails strong { display: block; color: var(--red); font-size: .9rem; font-weight: 700; margin-bottom: .2rem; }
+
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 2rem; }
+  .three > div { padding: 0 1.6rem; border-left: 3px solid var(--teal); }
+  .three > div:first-child { padding-left: 1.6rem; }
+  .three h3 { font-size: 1.2rem; margin-bottom: .6rem; }
+  .three p { font-size: 1rem; line-height: 1.6; }
+
+  .steps {
+    list-style: none; padding: 0; margin: 2.2rem 0 0;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+    position: relative;
+  }
+  .steps::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 9px;
+    height: 3px; background: var(--navy);
+  }
+  .steps li { position: relative; padding-top: 2.2rem; }
+  .steps li::before {
+    content: ""; position: absolute; top: 0; left: 0;
+    width: 21px; height: 21px; border-radius: 50%;
+    background: var(--gold); border: 4px solid var(--grey);
+  }
+  .steps h3 { font-size: 1.25rem; margin-bottom: .4rem; }
+  .steps p { font-size: 1rem; line-height: 1.6; }
+
+  .audience { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 1.5rem; }
+  .audience h3 { font-size: 1.15rem; margin-bottom: .5rem; }
+  .audience p { font-size: 1rem; }
+
+  /* Roadmap */
+  .roadmap { list-style: none; margin: 2.2rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+  .roadmap li { border-top: 6px solid var(--navy); padding-top: 1rem; }
+  .roadmap li:nth-child(2) { border-top-color: var(--teal); }
+  .roadmap li:nth-child(3) { border-top-color: var(--gold); }
+  .roadmap li:nth-child(4) { border-top-color: var(--red); }
+  .roadmap h3 { font-size: 1.15rem; margin-bottom: .4rem; }
+  .roadmap p { font-size: .98rem; line-height: 1.55; }
+
+  .earn { list-style: none; margin: 1.5rem 0 0; padding: 0; max-width: 62ch; }
+  .earn li { padding: .85rem 0; border-bottom: 1px solid #C9CED8; font-size: 1.05rem; }
+  .earn li:first-child { border-top: 1px solid #C9CED8; }
+
+  /* Credibility band */
+  .band { background: var(--teal); color: var(--white); padding-block: 2.4rem; }
+  .band ul {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+    font-family: var(--heading);
+  }
+  .band li { border-left: 4px solid var(--gold); padding-left: 1rem; font-size: 1.05rem; }
+
+  /* Contact */
+  .contact { background: var(--navy); color: var(--white); }
+  .contact h2 { color: var(--white); }
+  .contact p { color: #DDE3EE; }
+  .contact a.mail { color: var(--gold); font-family: var(--heading); font-weight: 700; }
+
+  footer {
+    background: #131F38; color: #B8C2D6;
+    font-family: var(--heading); font-size: .85rem; padding-block: 1.6rem;
+  }
+  footer p { margin: 0 0 .3rem; max-width: none; }
+
+  @media (max-width: 860px) {
+    .hero .wrap, .audience { grid-template-columns: 1fr; }
+    .fails, .roadmap { grid-template-columns: 1fr 1fr; }
+    .three, .steps, .band ul { grid-template-columns: 1fr; }
+    .three > div { padding: .2rem 0 .2rem 1.2rem; margin-bottom: 1.4rem; }
+    .steps::before { display: none; }
+  }
+  @media (max-width: 520px) {
+    .fails, .roadmap { grid-template-columns: 1fr; }
+    nav ul { gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="#top">EVACUDOOR</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#problem">Problem</a></li>
+        <li><a href="#solution">Solution</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="hero" id="top">
+    <div class="wrap">
+      <div>
+        <h1>When the network fails, the exit still shows.</h1>
+        <p class="lede">Evacudoor is an offline fire evacuation guidance system for commercial buildings in Kenya. It keeps pointing people to the safest exit when WiFi, mobile networks and alarms have gone down.</p>
+        <a class="btn" href="#contact">Get in touch</a>
+      </div>
+      <figure>
+        <svg class="plan" viewBox="0 0 520 400" role="img" aria-labelledby="plan-t plan-d">
+          <title id="plan-t">Floor plan with a rerouted escape path</title>
+          <desc id="plan-d">A building floor plan where a fire blocks the left exit. A gold path leads a person from a lower room along the corridor to the right-hand exit.</desc>
+          <!-- outer walls -->
+          <rect class="wall" x="40" y="40" width="440" height="320"/>
+          <!-- corridor walls with door gaps -->
+          <path class="wall" d="M40 190 H160 M200 190 H320 M360 190 H480"/>
+          <path class="wall" d="M40 250 H240 M280 250 H400 M440 250 H480"/>
+          <!-- room dividers -->
+          <path class="wall" d="M187 40 V190 M333 40 V190 M187 250 V360 M333 250 V360"/>
+          <!-- exits (gaps in outer wall) -->
+          <path d="M40 200 V240" stroke="#1B2A4A" stroke-width="6"/>
+          <path d="M480 200 V240" stroke="#1B2A4A" stroke-width="6"/>
+          <text class="label" x="48" y="224">Exit</text>
+          <text class="label" x="436" y="224">Exit</text>
+          <!-- fire near left exit -->
+          <circle class="fire" cx="92" cy="220" r="44"/>
+          <!-- sensing devices -->
+          <circle class="node hot" cx="92" cy="220" r="7"/>
+          <circle class="node" cx="110" cy="120" r="7"/>
+          <circle class="node" cx="260" cy="120" r="7"/>
+          <circle class="node" cx="410" cy="120" r="7"/>
+          <circle class="node" cx="110" cy="305" r="7"/>
+          <circle class="node" cx="260" cy="305" r="7"/>
+          <circle class="node" cx="410" cy="305" r="7"/>
+          <circle class="node" cx="180" cy="220" r="7"/>
+          <circle class="node" cx="300" cy="220" r="7"/>
+          <circle class="node" cx="420" cy="220" r="7"/>
+          <!-- person -->
+          <circle cx="260" cy="320" r="9" fill="#FFFFFF"/>
+          <!-- route -->
+          <path class="route" d="M260 308 V220 H456"/>
+          <path d="M456 220 l-14 -9 v18 z" fill="#C98A2C"/>
+        </svg>
+        <figcaption>Illustration: a fire blocks the nearest exit, and guidance reroutes to the safe one.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <section id="problem">
+    <div class="wrap">
+      <div class="rule"></div>
+      <h2>In a fire, the systems meant to help are often the first to fail.</h2>
+      <p>When fire breaks out in a commercial building, people often don't know which exit is safest. Most buildings in Kenya still rely on static signage and human memory in the middle of a crisis.</p>
+      <p>The tools we expect to help depend on infrastructure that fire and smoke can take out quickly.</p>
+      <div class="fails">
+        <div><strong>Often fails</strong>WiFi</div>
+        <div><strong>Often fails</strong>Mobile networks</div>
+        <div><strong>Often fails</strong>Building alarms</div>
+        <div><strong>Cannot adapt</strong>Static exit signs</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="solution" class="alt">
+    <div class="wrap">
+      <div class="rule"></div>
+      <h2>Guidance that keeps working when the building doesn't.</h2>
+      <p>Evacudoor is a network of small, smart devices installed throughout a building. They sense conditions and guide people to the safest exit in real time.</p>
+      <div class="three">
+        <div>
+          <h3>Works offline</h3>
+          <p>No internet or cellular connection is needed, so guidance keeps running when infrastructure doesn't.</p>
+        </div>
+        <div>
+          <h3>Reacts to conditions</h3>
+          <p>Guidance updates as conditions change, so people are not sent toward danger.</p>
+        </div>
+        <div>
+          <h3>Made for Kenyan buildings</h3>
+          <p>Designed in Nairobi for the way commercial buildings here are built and used.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top:3.5rem;">How it works</h2>
+      <ol class="steps">
+        <li>
+          <h3>Sense</h3>
+          <p>Small devices placed through the building detect heat and smoke.</p>
+        </li>
+        <li>
+          <h3>Decide</h3>
+          <p>The system works out which exits are still safe, with no internet or cellular signal.</p>
+        </li>
+        <li>
+          <h3>Guide</h3>
+          <p>People are shown the safest way out, updating as conditions change.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="audience">
+    <div class="wrap">
+      <div class="rule"></div>
+      <h2>Who Evacudoor is for.</h2>
+      <div class="audience">
+        <div>
+          <h3>Building owners and managers</h3>
+          <p>Commercial buildings in Kenya that want a safer evacuation than signage and memory.</p>
+        </div>
+        <div>
+          <h3>Insurers, regulators and facility managers</h3>
+          <p>Partners who care about building safety and compliance. Our later phases are planned around them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap" class="alt">
+    <div class="wrap">
+      <div class="rule"></div>
+      <h2>Four phases, one step at a time.</h2>
+      <ol class="roadmap">
+        <li>
+          <h3>Prove It</h3>
+          <p>A working offline demonstration of the system.</p>
+        </li>
+        <li>
+          <h3>Pilot It</h3>
+          <p>One real commercial building, running for weeks.</p>
+        </li>
+        <li>
+          <h3>Scale It</h3>
+          <p>Repeatable manufacturing and support across multiple buildings.</p>
+        </li>
+        <li>
+          <h3>Expand It</h3>
+          <p>Links to building and alarm systems, and growth into other East African markets.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="model">
+    <div class="wrap">
+      <div class="rule"></div>
+      <h2>How Evacudoor earns.</h2>
+      <ul class="earn">
+        <li>Hardware and installation for each building</li>
+        <li>An annual monitoring and support subscription per building</li>
+        <li>Optional compliance and training packages</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="band">
+    <div class="wrap">
+      <ul>
+        <li>Incorporated under Kenyan law</li>
+        <li>Provisional patent filed with KIPI</li>
+        <li>EVACUDOOR trademark in progress</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="contact" class="contact">
+    <div class="wrap">
+      <h2>Talk to us.</h2>
+      <p>Building owner, investor or partner? Send us a note. Detailed technical and commercial information is shared after a mutual NDA is signed.</p>
+      <p><a class="mail" href="mailto:info@evacudoortechnologieske.com?subject=Evacudoor%20enquiry">info@evacudoortechnologieske.com</a></p>
+      <a class="btn" href="mailto:info@evacudoortechnologieske.com?subject=Evacudoor%20enquiry">Email Evacudoor</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Evacudoor Company Limited · Nairobi, Kenya</p>
+    <p>Technical and commercial details are shared under NDA only.</p>
+    <p>© 2026 Evacudoor Company Limited. All rights reserved.</p>
+  </div>
+</footer>
+</body>
+</html>
